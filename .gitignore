@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.env
+
+# Logs and runtime
+logs/
+*.log
+
+# Streamlit cache
+.streamlit/
+
+# Ignore dataset if private
+data/
