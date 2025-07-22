@@ -1,37 +1,54 @@
 import joblib
 import pandas as pd
-import os
-import datetime
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
+# Paths — no "models/" folder prefix now:
+MODEL_PATH_CLASS = "classifier_model.pkl"
+MODEL_PATH_REG = "regressor_model.pkl"
+
+# Constants
 minutes_per_quarter = 5
 
-MODEL_PATH_CLASS = 'models/classifier_model.pkl'
-MODEL_PATH_REG = 'models/regressor_model.pkl'
-LOGS_DIR = 'logs'
-
-os.makedirs(LOGS_DIR, exist_ok=True)
-
+# Load models at startup
 clf_model = joblib.load(MODEL_PATH_CLASS)
 reg_model = joblib.load(MODEL_PATH_REG)
 
 def predict_live(input_data):
-    df_live = pd.DataFrame([input_data])
-    pred_class = clf_model.predict(df_live)[0]
-    pred_confidence = clf_model.predict_proba(df_live).max()
-    pred_total_score = reg_model.predict(df_live)[0]
-    return pred_class, pred_confidence, pred_total_score
+    df = pd.DataFrame([input_data])
 
-def classify_prediction_stage(quarter, minutes_remaining):
-    if minutes_remaining == minutes_per_quarter:
-        return f"START_OF_Q{quarter}"
-    elif minutes_remaining == 0:
-        return f"END_OF_Q{quarter}"
+    pred_class = clf_model.predict(df)[0]
+    conf = clf_model.predict_proba(df).max()
+
+    pred_total = reg_model.predict(df)[0]
+
+    return pred_class, conf, pred_total
+
+def classify_prediction_stage(q, mins):
+    if q == 1 and mins == 0:
+        return "END_OF_Q1"
+    elif q == 2 and mins == 0:
+        return "END_OF_Q2"
+    elif q == 3 and mins == 0:
+        return "END_OF_Q3"
+    elif q == 4 and mins == 0:
+        return "END_OF_Q4"
+    elif q == 1 and mins == minutes_per_quarter:
+        return "START_OF_Q1"
+    elif q == 2 and mins == minutes_per_quarter:
+        return "START_OF_Q2"
+    elif q == 3 and mins == minutes_per_quarter:
+        return "START_OF_Q3"
+    elif q == 4 and mins == minutes_per_quarter:
+        return "START_OF_Q4"
     else:
         return "IN_GAME"
 
 def load_all_logs():
-    logs = []
-    for f in os.listdir(LOGS_DIR):
-        if f.startswith('prediction_history_') and f.endswith('.csv'):
-            logs.append(pd.read_csv(f'{LOGS_DIR}/{f}'))
-    return pd.concat(logs, ignore_index=True) if logs else pd.DataFrame()
+    try:
+        df = pd.read_csv("prediction_history.csv")
+    except FileNotFoundError:
+        df = pd.DataFrame()
+    return df
